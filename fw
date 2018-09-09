@@ -1,0 +1,63 @@
+#!/bin/bash
+
+PortForwarding () {
+	source /etc/firewall/config.txt
+	IPv4 () {
+		EXTERNALPORT=$(whiptail --backtitle "External Port" --title "External Port Selection" --inputbox "What external port do you want to open?" $r $c)
+		INTERNALIP=$(whiptail --backtitle "IP" --title "Internal IP Address" --inputbox "What internal IP do you want traffic forwarded to?" $r $c)
+		INTERNALPORT=$(whiptail --backtitle "Internal Port" --title "Internal Port Selection" --inputbox "What internal port do you want to use?" $r $c "$EXTERNALPORT")
+		PROTOCOL=$(whiptail --backtitle "Protocol" --title "TCP or UDP" --radiolist "What protocol do you want to use" $r $c 2 \
+			"tcp" "Use TCP" on \
+			"udp" "Use UDP" off)
+		awk '1;/:prerouting/{ print "-A PREROUTING -p $PROTOCOL -i $WANPORT --dport $EXTERNALPORT -j DNAT --to-destination $INTERNALIP:$INTERNALPORT"}' /etc/firewall/ipv4/nat
+		awk '1;/:forward/{print "-A FORWARD -p $PROTOCOL -d $INTERNALIP --dport $INTERNALPORT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT"}' /etc/firewall/ipv4/filter
+		service firewall restart
+	}
+	
+	IPv6 () {
+		EXTERNALPORT=$(whiptail --backtitle "External Port" --title "External Port Selection" --inputbox "What external port do you want to open?" $r $c)
+		INTERNALIP=$(whiptail --backtitle "IP" --title "Internal IP Address" --inputbox "What internal IP do you want traffic forwarded to?" $r $c)
+		INTERNALPORT=$(whiptail --backtitle "Internal Port" --title "Internal Port Selection" --inputbox "What internal port do you want to use?" $r $c "$EXTERNALPORT")
+		PROTOCOL=$(whiptail --backtitle "Protocol" --title "TCP or UDP" --radiolist "What protocol do you want to use" $r $c 2 \
+			"tcp" "Use TCP" on \
+			"udp" "Use UDP" off)
+		awk '1;/:prerouting/{ print "-A PREROUTING -p $PROTOCOL -i $WANPORT --dport $EXTERNALPORT -j DNAT --to-destination $INTERNALIP:$INTERNALPORT"}' /etc/firewall/ipv6/nat
+		awk '1;/:forward/{print "-A FORWARD -p $PROTOCOL -d $INTERNALIP --dport $INTERNALPORT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT"}' /etc/firewall/ipv6/filter
+		service firewall restart
+	}
+
+	whiptail --backtitle "IP Protocol" --title "Open IPv4 or IPv6 Port?" --menu "Which Protocol" $r $c 2 \
+		"IPv4" "Open an IPv4 Port" on \
+		"IPv6" "Open an IPv6 Port" off 2>IP
+	case "$?" in
+		"IPv4" ) IPv4;;
+		"IPv6" ) IPv6;;
+	esac
+	exit 0
+}
+
+PortBlocking () {
+
+}
+
+Policy () {
+
+}
+
+Menu () {
+	whiptail --backtitle "Menu" --title "Firewall Manager" --menu "Main Menu" $r $c 4 \
+		"Port Forwarding" "Forward incoming traffic to a local device" on \
+		"Block Port" "Block a specific port" off \
+		"Policy" "Chnage the default policy" off 
+		"Configuration" "Configure default firewall settings" off 2>menu
+	case "$?" in
+		"Port Forwarding" ) PortForwarding;;
+		"Block Port" ) PortBlocking;;
+		"Policy" ) Policy;;
+	esac
+	exit 0
+}
+
+CLI () {
+
+}
